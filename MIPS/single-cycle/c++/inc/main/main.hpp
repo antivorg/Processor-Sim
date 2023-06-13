@@ -4,6 +4,7 @@
 
 
 #include "cmd_args.hpp"
+#include "../simulator/program_memory.hpp"
 
 
 #endif

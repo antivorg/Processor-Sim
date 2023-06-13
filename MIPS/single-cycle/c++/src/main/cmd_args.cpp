@@ -44,7 +44,7 @@ int cmd_args::number(void) {
 }
 
 
-void graph_cmd_args::print_help(void) {
+void cmd_args_help::print_help(void) {
         std::cout<<descriptionMsg<<std::endl<<std::endl;
         for (std::vector<std::string> line : helpMsg) {
                 if (line[0] == "heading") {

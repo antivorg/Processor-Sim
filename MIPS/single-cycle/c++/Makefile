@@ -1,13 +1,13 @@
 CC = g++
 CFLAGS=-I -Wall
 
-_DEPS = main/main.hpp main/cmd_args.hpp
-_OBJ = main/main.o main/cmd_args.o
+_DEPS = main/main.hpp main/cmd_args.hpp simulator/program_memory.hpp utils/elf_parser.hpp
+_OBJ = main/main.o main/cmd_args.o simulator/program_memory.o utils/elf_parser.o
 
 IDIR = inc
 ODIR = src
 EDIR = bin
-OUT = draw
+OUT = mips-emul
 
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
