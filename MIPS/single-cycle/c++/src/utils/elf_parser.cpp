@@ -2,18 +2,38 @@
 
 
 elf_parser elf_parser::read_file(std::string file) {
-	
+
 	std::ifstream fileIt(file, std::ios::binary);
 	std::vector<char> bytes((std::istreambuf_iterator<char>(fileIt)),
 				(std::istreambuf_iterator<char>()));
 	fileIt.close();
 
-	if (bytes[4] == 1) {
-		// 32-bit format
-		return elf_32_parser(bytes);
-	} else {
-		// 64-bit format
-		return elf_64_parser(bytes);
+	try {
+    		if (bytes[0] != 0x7F || bytes[1] != 0x45
+				|| bytes[2] != 0x4c || bytes[3] != 0x46) {
+			throw 0;
+		}
+
+		if (bytes[EI_CLASS_offset] == 1) {
+                	// 32-bit format
+                	return elf_32_parser(bytes);
+        	} else if (bytes[EI_CLASS_offset] == 2) {
+                	// 64-bit format
+                	return elf_64_parser(bytes);
+        	} else {
+			throw 1;
+		}
+	}
+ 	catch (int e) {
+		switch(e) {
+			case 0:
+				std::cout << "Exception: Incorrect magic number for ELF format"
+						<< std::endl;
+				break;
+			case 1:
+				std::cout << "Exception: Unexpected value in ELF header" << std::endl;
+				break;
+		}
 	}
 }
 
@@ -21,10 +41,9 @@ elf_parser elf_parser::read_file(std::string file) {
 int elf_parser::join_bytes(std::vector<char>::iterator ptr, int numOfBytes, bool bigEndian) {
 
 	int result=0;
-
 	for (int i=0; i<numOfBytes; i++) {
 		if (bigEndian) {
-			result = result<<8;
+			result = result << 8;
 			result += *ptr;
 		} else {
 			result += (*ptr) << (8*i);
@@ -38,48 +57,61 @@ int elf_parser::join_bytes(std::vector<char>::iterator ptr, int numOfBytes, bool
 
 elf_32_parser::elf_32_parser(std::vector<char> bytes) {
 
-	// Parse Header
-	elfHeader.e_ident.EI_OSABI = bytes[7];
-        elfHeader.e_ident.EI_ABIVERSION = bytes[8];
+	std::cout<<"32"<<std::endl;
 	
-	bool bigEndian = bytes[5] == 2;
+	// parse file header
+	elfHeader.e_ident.EI_OSABI = bytes[EI_OSABI_offset];
+        elfHeader.e_ident.EI_ABIVERSION = bytes[EI_ABIVERSION_offset];
+	bool bigEndian = bytes[EI_DATA_offset] == 2;
+	elfHeader.e_type = 	join_bytes(bytes.begin()+e_type_offset, 	e_type_size, bigEndian);
+	elfHeader.e_machine = 	join_bytes(bytes.begin()+e_machine_offset, 	e_machine_size, bigEndian);
+	elfHeader.e_version = 	join_bytes(bytes.begin()+e_version_offset, 	e_version_size, bigEndian);
+	elfHeader.e_entry = 	join_bytes(bytes.begin()+e_entry_offset, 	e_entry_32_size, bigEndian);
+	elfHeader.e_phoff = 	join_bytes(bytes.begin()+e_phoff_32_offset, 	e_phoff_32_size, bigEndian);
+	elfHeader.e_shoff = 	join_bytes(bytes.begin()+e_shoff_32_offset, 	e_shoff_32_size, bigEndian);
+	elfHeader.e_flags = 	join_bytes(bytes.begin()+e_flags_32_offset, 	e_flags_size, bigEndian);
+	elfHeader.e_ehsize = 	join_bytes(bytes.begin()+e_ehsize_32_offset, 	e_ehsize_size, bigEndian);
+	elfHeader.e_phentsize = join_bytes(bytes.begin()+e_phentsize_32_offset, e_phentsize_size, bigEndian);
+	elfHeader.e_phnum = 	join_bytes(bytes.begin()+e_phnum_32_offset, 	e_phnum_size, bigEndian);
+	elfHeader.e_shentsize = join_bytes(bytes.begin()+e_shentsize_32_offset, e_shentsize_size, bigEndian);
+	elfHeader.e_shnum = 	join_bytes(bytes.begin()+e_shnum_32_offset, 	e_shnum_size, bigEndian);
+	elfHeader.e_shstrndx = 	join_bytes(bytes.begin()+e_shstrndx_32_offset, 	e_shstrndx_size, bigEndian);
 
-	elfHeader.e_type = join_bytes(bytes.begin()+10, 2, bigEndian);
-	elfHeader.e_machine = join_bytes(bytes.begin()+12, 2, bigEndian);
-	elfHeader.e_version = join_bytes(bytes.begin()+14, 4, bigEndian);
-	elfHeader.e_entry = join_bytes(bytes.begin()+18, 4, bigEndian);
-	elfHeader.e_phoff = join_bytes(bytes.begin()+0x1C, 4, bigEndian);
-	elfHeader.e_shoff = join_bytes(bytes.begin()+0x20, 4, bigEndian);
-	elfHeader.e_flags = join_bytes(bytes.begin()+0x24, 4, bigEndian);
-	elfHeader.e_ehsize = join_bytes(bytes.begin()+0x28, 2, bigEndian);
-	elfHeader.e_phentsize = join_bytes(bytes.begin()+0x2A, 2, bigEndian);
-	elfHeader.e_phnum = join_bytes(bytes.begin()+0x2C, 2, bigEndian);
-	elfHeader.e_shentsize = join_bytes(bytes.begin()+0x2E, 2, bigEndian);
-	elfHeader.e_shnum = join_bytes(bytes.begin()+0x30, 2, bigEndian);
-	elfHeader.e_shstrndx = join_bytes(bytes.begin()+0x32, 2, bigEndian);
+	// parse program headers
+	for (int i=0; i<elfHeader.e_phnum; i++) {
+		int offset = elfHeader.e_phoff + elfHeader.e_phentsize*i;
+		std::cout << i << "\t" << offset << std::endl;
+	}
+	std::cout<<elfHeader.e_phnum<<std::endl;
 
 }
 
 elf_64_parser::elf_64_parser(std::vector<char> bytes) {
 
-	// Parse Header
+	std::cout<<"64"<<std::endl;
+	
+	// parse file header
         elfHeader.e_ident.EI_OSABI = bytes[7];
         elfHeader.e_ident.EI_ABIVERSION = bytes[8];
-
         bool bigEndian = bytes[5] == 2;
+        elfHeader.e_type = 	join_bytes(bytes.begin()+e_type_offset, 	e_type_size, bigEndian);
+        elfHeader.e_machine = 	join_bytes(bytes.begin()+e_machine_offset, 	e_machine_size, bigEndian);
+        elfHeader.e_version = 	join_bytes(bytes.begin()+e_version_offset, 	e_version_size, bigEndian);
+        elfHeader.e_entry = 	join_bytes(bytes.begin()+e_entry_offset, 	e_entry_64_size, bigEndian);
+        elfHeader.e_phoff = 	join_bytes(bytes.begin()+e_phoff_64_offset, 	e_phoff_64_size, bigEndian);
+        elfHeader.e_shoff = 	join_bytes(bytes.begin()+e_shoff_64_offset, 	e_shoff_64_size, bigEndian);
+        elfHeader.e_flags = 	join_bytes(bytes.begin()+e_flags_64_offset, 	e_flags_size, bigEndian);
+        elfHeader.e_ehsize = 	join_bytes(bytes.begin()+e_ehsize_64_offset, 	e_ehsize_size, bigEndian);
+        elfHeader.e_phentsize = join_bytes(bytes.begin()+e_phentsize_64_offset, e_phentsize_size, bigEndian);
+        elfHeader.e_phnum = 	join_bytes(bytes.begin()+e_phnum_64_offset, 	e_phnum_size, bigEndian);
+        elfHeader.e_shentsize = join_bytes(bytes.begin()+e_shentsize_64_offset, e_shentsize_size, bigEndian);
+        elfHeader.e_shnum = 	join_bytes(bytes.begin()+e_shnum_64_offset, 	e_shnum_size, bigEndian);
+        elfHeader.e_shstrndx = 	join_bytes(bytes.begin()+e_shstrndx_64_offset, 	e_shstrndx_size, bigEndian);
 
-        elfHeader.e_type = join_bytes(bytes.begin()+10, 2, bigEndian);
-        elfHeader.e_machine = join_bytes(bytes.begin()+12, 2, bigEndian);
-        elfHeader.e_version = join_bytes(bytes.begin()+14, 4, bigEndian);
-        elfHeader.e_entry = join_bytes(bytes.begin()+18, 8, bigEndian);
-        elfHeader.e_phoff = join_bytes(bytes.begin()+0x20, 8, bigEndian);
-        elfHeader.e_shoff = join_bytes(bytes.begin()+0x28, 8, bigEndian);
-        elfHeader.e_flags = join_bytes(bytes.begin()+0x30, 4, bigEndian);
-        elfHeader.e_ehsize = join_bytes(bytes.begin()+0x34, 2, bigEndian);
-        elfHeader.e_phentsize = join_bytes(bytes.begin()+0x36, 2, bigEndian);
-        elfHeader.e_phnum = join_bytes(bytes.begin()+0x38, 2, bigEndian);
-        elfHeader.e_shentsize = join_bytes(bytes.begin()+0x3A, 2, bigEndian);
-        elfHeader.e_shnum = join_bytes(bytes.begin()+0x3C, 2, bigEndian);
-        elfHeader.e_shstrndx = join_bytes(bytes.begin()+0x3E, 2, bigEndian);
-
+	// parse program headers
+        for (int i=0; i<elfHeader.e_phnum; i++) {
+                int offset = elfHeader.e_phoff + elfHeader.e_phentsize*i;
+                std::cout << i << "\t" << offset << std::endl;
+        }
+        std::cout<<elfHeader.e_phnum<<std::endl;
 }

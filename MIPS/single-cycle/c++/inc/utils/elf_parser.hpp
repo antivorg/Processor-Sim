@@ -10,6 +10,9 @@
 #include <iostream>
 
 
+#include "elf_defines.hpp"
+
+
 typedef struct e_ident_t {
 	int EI_OSABI;
 	int EI_ABIVERSION;
@@ -32,6 +35,18 @@ typedef struct elfHeader_t {
 	int e_shstrndx;
 } elfHeader_t;
 
+typedef struct programHeader_t {
+	int p_type;
+	int p_flags;
+	int p_offset;
+	int p_vaddr;
+	int p_paddr;
+	int p_filesz;
+	int p_memsz;
+	int p_flags_seg;
+	int p_align;
+} programHeader_t;
+
 
 class elf_parser {
 
@@ -47,7 +62,7 @@ class elf_32_parser : public elf_parser {
 
 	private:
                 elfHeader_t elfHeader;
-                std::vector<unsigned int> programHeaderTable;
+		std::vector<programHeader_t> programHeaders;
                 std::vector<unsigned int> sectionHeaderTable;
 
 	public:
@@ -60,7 +75,7 @@ class elf_64_parser : public elf_parser {
 
 	private:
                 elfHeader_t elfHeader;
-                std::vector<unsigned int> programHeaderTable;
+		std::vector<programHeader_t> programHeaders;
                 std::vector<unsigned int> sectionHeaderTable;
 
 	public:

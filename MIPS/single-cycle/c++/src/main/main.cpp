@@ -16,10 +16,11 @@ int main(int argc, char *argv[]) {
         }
 
         int index;
+	std::string file;
         if (index=args.find("--file") != -1) {
-		std::string file = args.read_arg(index);
+		file = args.read_arg(index);
         } else if (index=args.find("-f") != -1) {
-		std::string file = args.read_arg(index);
+		file = args.read_arg(index);
 	} else {
 		args.print_help();
 		return EXIT_FAILURE;
@@ -42,7 +43,7 @@ int main(int argc, char *argv[]) {
 	//simEngine.write_log("sim_log.csv");
 	
 	elf_parser elf;
-	elf.read_file("a.out");	
+	elf.read_file(file);	
 
         return EXIT_SUCCESS;
 }
