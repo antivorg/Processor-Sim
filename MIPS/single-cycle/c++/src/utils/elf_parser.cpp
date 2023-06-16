@@ -1,17 +1,23 @@
 #include "../../inc/utils/elf_parser.hpp"
 
+namespace elf {
 
 elf_parser elf_parser::read_file(std::string file) {
 
-	std::ifstream fileIt(file, std::ios::binary);
-	std::vector<char> bytes((std::istreambuf_iterator<char>(fileIt)),
-				(std::istreambuf_iterator<char>()));
-	fileIt.close();
-
 	try {
-    		if (bytes[0] != 0x7F || bytes[1] != 0x45
-				|| bytes[2] != 0x4c || bytes[3] != 0x46) {
+		std::vector<char> bytes;
+		if (std::filesystem::exists(file)) {
+			std::ifstream fileIt(file, std::ios::binary);
+        		bytes = std::vector<char>((std::istreambuf_iterator<char>(fileIt)),
+                		                (std::istreambuf_iterator<char>()));
+        		fileIt.close();
+		} else {
 			throw 0;
+		}
+
+		if (bytes[0] != 0x7F || bytes[1] != 0x45
+				|| bytes[2] != 0x4c || bytes[3] != 0x46) {
+			throw 1;
 		}
 
 		if (bytes[EI_CLASS_offset] == 1) {
@@ -21,16 +27,19 @@ elf_parser elf_parser::read_file(std::string file) {
                 	// 64-bit format
                 	return elf_64_parser(bytes);
         	} else {
-			throw 1;
+			throw 2;
 		}
 	}
  	catch (int e) {
 		switch(e) {
 			case 0:
+				std::cout << "Exception: File doesn't exist" << std::endl;
+				break;
+			case 1:
 				std::cout << "Exception: Incorrect magic number for ELF format"
 						<< std::endl;
 				break;
-			case 1:
+			case 2:
 				std::cout << "Exception: Unexpected value in ELF header" << std::endl;
 				break;
 		}
@@ -40,7 +49,7 @@ elf_parser elf_parser::read_file(std::string file) {
 
 int elf_parser::join_bytes(std::vector<char>::iterator ptr, int numOfBytes, bool bigEndian) {
 
-	int result=0;
+	unsigned int result=0;
 	for (int i=0; i<numOfBytes; i++) {
 		if (bigEndian) {
 			result = result << 8;
@@ -115,3 +124,5 @@ elf_64_parser::elf_64_parser(std::vector<char> bytes) {
         }
         std::cout<<elfHeader.e_phnum<<std::endl;
 }
+
+} // end of namespace elf

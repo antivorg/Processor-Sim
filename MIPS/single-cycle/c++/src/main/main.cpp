@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 	//simEngine.run();
 	//simEngine.write_log("sim_log.csv");
 	
-	elf_parser elf;
+	elf::elf_parser elf;
 	elf.read_file(file);	
 
         return EXIT_SUCCESS;
