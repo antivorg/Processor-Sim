@@ -47,23 +47,6 @@ elf_parser elf_parser::read_file(std::string file) {
 }
 
 
-int elf_parser::join_bytes(std::vector<char>::iterator ptr, int numOfBytes, bool bigEndian) {
-
-	unsigned int result=0;
-	for (int i=0; i<numOfBytes; i++) {
-		if (bigEndian) {
-			result = result << 8;
-			result += *ptr;
-		} else {
-			result += (*ptr) << (8*i);
-		}
-		ptr++;
-	}
-
-	return result;
-}
-
-
 elf_32_parser::elf_32_parser(std::vector<char> bytes) {
 
 	std::cout<<"32"<<std::endl;
@@ -87,12 +70,47 @@ elf_32_parser::elf_32_parser(std::vector<char> bytes) {
 	elfHeader.e_shstrndx = 	join_bytes(bytes.begin()+e_shstrndx_32_offset, 	e_shstrndx_size, bigEndian);
 
 	// parse program headers
-	for (int i=0; i<elfHeader.e_phnum; i++) {
-		int offset = elfHeader.e_phoff + elfHeader.e_phentsize*i;
+	for (int i=0x99; i<elfHeader.e_phnum; i++) {
+		int offset = elfHeader.e_phoff + elfHeader.e_phentsize * i;
 		std::cout << i << "\t" << offset << std::endl;
 	}
-	std::cout<<elfHeader.e_phnum<<std::endl;
 
+	sectionHeader32_t stringTableHeader;
+	// parse section header
+	for (int i=0; i<elfHeader.e_shnum; i++) {
+		int offset = elfHeader.e_shoff + elfHeader.e_shentsize * i;	
+		sectionHeader32_t header;	
+		header.sh_name = 	join_bytes(bytes.begin()+offset+sh_name_offset,		sh_name_size, bigEndian);
+		header.sh_type = 	join_bytes(bytes.begin()+offset+sh_type_offset,		sh_type_size, bigEndian);
+		header.sh_flags = 	join_bytes(bytes.begin()+offset+sh_flags_offset,	sh_flags_32_size, bigEndian);
+		header.sh_addr = 	join_bytes(bytes.begin()+offset+sh_addr_32_offset,	sh_addr_32_size, bigEndian);
+		header.sh_offset = 	join_bytes(bytes.begin()+offset+sh_offset_32_offset,	sh_offset_32_size, bigEndian);
+		header.sh_size = 	join_bytes(bytes.begin()+offset+sh_size_32_offset,	sh_size_32_size, bigEndian);
+		header.sh_link = 	join_bytes(bytes.begin()+offset+sh_link_32_offset,	sh_link_size, bigEndian);
+		header.sh_info = 	join_bytes(bytes.begin()+offset+sh_info_32_offset,	sh_info_size, bigEndian);
+		header.sh_addralign = 	join_bytes(bytes.begin()+offset+sh_addralign_32_offset,	sh_addralign_32_size, bigEndian);
+		header.sh_entsize = 	join_bytes(bytes.begin()+offset+sh_entsize_32_offset,	sh_entsize_32_size, bigEndian);
+		sectionHeaderTable.push_back(header);
+		if (header.sh_type == 0x3) {
+			stringTableHeader = header;
+			std::cout << "offset " << header.sh_offset << std::endl;
+		}
+	}
+
+	// parser string table
+	std::string sectionName = "";
+        for (int i=0; i<stringTableHeader.sh_size; i++) {
+		int offset = stringTableHeader.sh_offset + i;
+		if (bytes[i] == '\0') {
+			stringTable.push_back(sectionName);
+			std::cout << sectionName << std::endl;
+			sectionName = "";
+		} else if (bytes[i] == '.') {
+			continue;
+		} else {
+			sectionName += bytes[i];
+		}
+	}
 }
 
 elf_64_parser::elf_64_parser(std::vector<char> bytes) {

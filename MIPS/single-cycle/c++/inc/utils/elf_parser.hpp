@@ -13,6 +13,7 @@
 
 namespace elf {
 
+// elf header
 constexpr int EI_MAG_offset =		0x00;
 constexpr int EI_CLASS_offset =   	0x04;
 constexpr int EI_DATA_offset =    	0x05;
@@ -138,14 +139,15 @@ constexpr int sh_entsize_64_size =	8;
 typedef std::uint32_t Elf32_Addr;
 typedef std::uint16_t Elf32_Half;
 typedef std::uint32_t Elf32_Off;
-typedef std::uint32_t Elf32_Sword;
+typedef std::int32_t Elf32_Sword;
 typedef std::uint32_t Elf32_Word;
 
 typedef std::uint64_t Elf64_Addr;
 typedef std::uint16_t Elf64_Half;
 typedef std::uint64_t Elf64_Off;
-typedef std::uint64_t Elf64_Sword;
+typedef std::int64_t Elf64_Sword;
 typedef std::uint32_t Elf64_Word;
+typedef std::uint64_t Elf64_Xword;
 
 typedef struct e_ident_t {
 	std::uint8_t EI_OSABI;
@@ -186,26 +188,74 @@ typedef struct elf64Header_t {
         Elf64_Half e_shstrndx;
 } elf64Header_t;
 
-typedef struct programHeader_t {
-	int p_type;
-	int p_flags;
-	int p_offset;
-	int p_vaddr;
-	int p_paddr;
-	int p_filesz;
-	int p_memsz;
-	int p_flags_seg;
-	int p_align;
-} programHeader_t;
+typedef struct programHeader32_t {
+	Elf32_Word p_type;
+	Elf32_Off p_offset;
+	Elf32_Addr p_vaddr;
+	Elf32_Addr p_paddr;
+	Elf32_Word p_filesz;
+	Elf32_Word p_memsz;
+	Elf32_Word p_flags;
+	Elf32_Word p_align;
+} programHeader32_t;
 
+typedef struct programHeader64_t {
+        Elf64_Word p_type;
+        Elf64_Off p_offset;
+        Elf64_Addr p_vaddr;
+        Elf64_Addr p_paddr;
+        Elf64_Xword p_filesz;
+        Elf64_Xword p_memsz;
+        Elf64_Word p_flags;
+        Elf64_Xword p_align;
+} programHeader64_t;
+
+typedef struct sectionHeader32_t {
+	Elf32_Word sh_name;
+	Elf32_Word sh_type;
+	Elf32_Word sh_flags;
+	Elf32_Addr sh_addr;
+	Elf32_Off sh_offset;
+	Elf32_Word sh_size;
+	Elf32_Word sh_link;
+	Elf32_Word sh_info;
+	Elf32_Word sh_addralign;
+	Elf32_Word sh_entsize;
+} sectionHeader32_t;
+
+typedef struct sectionHeader64_t {
+	Elf64_Word sh_name;
+        Elf64_Word sh_type;
+        Elf64_Xword sh_flags;
+        Elf64_Addr sh_addr;
+        Elf64_Off sh_offset;
+        Elf64_Xword sh_size;
+        Elf64_Word sh_link;
+        Elf64_Word sh_info;
+        Elf64_Xword sh_addralign;
+        Elf64_Xword sh_entsize;
+} sectionHaeder64_t;
 
 class elf_parser {
 
 	// Factory
 	public:
 		static elf_parser read_file(std::string file);
-		int join_bytes(std::vector<char>::iterator ptr, int numOfBytes, bool bigEndian);
+		template <typename T>
+		T join_bytes(std::vector<char>::iterator ptr, T numOfBytes, bool bigEndian) {
+			T result=0;
+        		for (int i=0; i<numOfBytes; i++) {
+                		if (bigEndian) {
+                        		result = result << 8;
+                        		result += *ptr;
+                		} else {
+                        		result += (*ptr) << (8*i);
+                		}
+                		ptr++;
+        		}
 
+        		return result;
+		}
 };
 
 
@@ -213,12 +263,12 @@ class elf_32_parser : public elf_parser {
 
 	private:
                 elf32Header_t elfHeader;
-		std::vector<programHeader_t> programHeaders;
-                std::vector<unsigned int> sectionHeaderTable;
+		std::vector<programHeader32_t> programHeaders;
+                std::vector<sectionHeader32_t> sectionHeaderTable;
+		std::vector<std::string> stringTable;
 
 	public:
 		elf_32_parser(std::vector<char> bytes);
-
 };
 
 
@@ -226,12 +276,11 @@ class elf_64_parser : public elf_parser {
 
 	private:
                 elf64Header_t elfHeader;
-		std::vector<programHeader_t> programHeaders;
-                std::vector<unsigned int> sectionHeaderTable;
+		std::vector<programHeader64_t> programHeaders;
+                std::vector<sectionHeader64_t> sectionHeaderTable;
 
 	public:
 		elf_64_parser(std::vector<char> bytes);
-
 };
 
 } // end of namespace elf
