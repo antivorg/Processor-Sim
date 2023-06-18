@@ -236,26 +236,22 @@ typedef struct sectionHeader64_t {
         Elf64_Xword sh_entsize;
 } sectionHaeder64_t;
 
+typedef struct section32_t : sectionHeader32_t {
+	std::string name;
+	std::vector<char> bytes;
+} section32_t;
+
+typedef struct section64_t : sectionHeader64_t {
+	std::string name;
+	std::vector<char> bytes;
+} section64_t;
+
 class elf_parser {
 
 	// Factory
 	public:
 		static elf_parser read_file(std::string file);
-		template <typename T>
-		T join_bytes(std::vector<char>::iterator ptr, T numOfBytes, bool bigEndian) {
-			T result=0;
-        		for (int i=0; i<numOfBytes; i++) {
-                		if (bigEndian) {
-                        		result = result << 8;
-                        		result += *ptr;
-                		} else {
-                        		result += (*ptr) << (8*i);
-                		}
-                		ptr++;
-        		}
-
-        		return result;
-		}
+		unsigned int join_bytes(std::vector<char>::iterator ptr, int numOfBytes, bool bigEndian);
 };
 
 
@@ -264,11 +260,11 @@ class elf_32_parser : public elf_parser {
 	private:
                 elf32Header_t elfHeader;
 		std::vector<programHeader32_t> programHeaders;
-                std::vector<sectionHeader32_t> sectionHeaderTable;
-		std::vector<std::string> stringTable;
+                std::vector<section32_t> sectionHeaderTable;
 
 	public:
 		elf_32_parser(std::vector<char> bytes);
+		std::vector<char> read_section(std::string name);
 };
 
 
@@ -282,6 +278,12 @@ class elf_64_parser : public elf_parser {
 	public:
 		elf_64_parser(std::vector<char> bytes);
 };
+
+
+class elf_error : public elf_parser {
+	// Factory error
+};
+
 
 } // end of namespace elf
 

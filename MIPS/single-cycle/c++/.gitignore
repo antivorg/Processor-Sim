@@ -33,3 +33,6 @@
 
 # Assembly Files
 *.asm
+
+# Vim
+*.swp
