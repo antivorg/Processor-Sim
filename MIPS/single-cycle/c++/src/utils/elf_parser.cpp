@@ -5,10 +5,10 @@ namespace elf {
 elf_parser elf_parser::read_file(std::string file) {
 
 	try {
-		std::vector<char> bytes;
+		std::vector<std::uint8_t> bytes;
 		if (std::filesystem::exists(file)) {
 			std::ifstream fileIt(file, std::ios::binary);
-        		bytes = std::vector<char>((std::istreambuf_iterator<char>(fileIt)),
+        		bytes = std::vector<std::uint8_t>((std::istreambuf_iterator<char>(fileIt)),
                 		                (std::istreambuf_iterator<char>()));
         		fileIt.close();
 		} else {
@@ -47,24 +47,22 @@ elf_parser elf_parser::read_file(std::string file) {
 	}
 }
 
-unsigned int elf_parser::join_bytes(std::vector<char>::iterator ptr, int numOfBytes, bool bigEndian) {
+unsigned int elf_parser::join_bytes(std::vector<std::uint8_t>::iterator ptr, int numOfBytes, bool bigEndian) {
 
 	unsigned int result = 0;
 	for (int i=0; i<numOfBytes; i++) {
 		if (bigEndian) {
 			result = result << 8;
-			result += *ptr;
+			result += (std::uint8_t) *ptr;
 		} else {
-			result += (*ptr) << (8*i);
-			std::cout << result << std::endl;
+			result += ((std::uint8_t) *ptr) << (8*i);
         	}
         	ptr++;
 	}
-	std::cout << "not hex" << result << std::endl;
 	return result;
 }
 
-elf_32_parser::elf_32_parser(std::vector<char> bytes) {
+elf_32_parser::elf_32_parser(std::vector<std::uint8_t> bytes) {
 
 	std::cout<<"32"<<std::endl;
 	
@@ -106,7 +104,6 @@ elf_32_parser::elf_32_parser(std::vector<char> bytes) {
 		header.sh_info = 	join_bytes(bytes.begin()+offset+sh_info_32_offset,	sh_info_size, bigEndian);
 		header.sh_addralign = 	join_bytes(bytes.begin()+offset+sh_addralign_32_offset,	sh_addralign_32_size, bigEndian);
 		header.sh_entsize = 	join_bytes(bytes.begin()+offset+sh_entsize_32_offset,	sh_entsize_32_size, bigEndian);
-		std::cout << std::hex << header.sh_size << std::endl;
 		for (int i=header.sh_offset; i-header.sh_offset<header.sh_size; i++) {
 			header.bytes.push_back(bytes[i]);
 		}
@@ -126,12 +123,11 @@ elf_32_parser::elf_32_parser(std::vector<char> bytes) {
 			offset++;
 		}
 		section.name == sectionName;
-		std::cout << sectionName << "\t" << section.sh_name << std::endl;
 	}
 }
 
 
-std::vector<char> elf_32_parser::read_section(std::string name) {
+std::vector<std::uint8_t> elf_32_parser::read_section(std::string name) {
 
 	section32_t section;
 	for (section32_t sectionHeader : sectionHeaderTable) {
@@ -144,7 +140,7 @@ std::vector<char> elf_32_parser::read_section(std::string name) {
 }
 
 
-elf_64_parser::elf_64_parser(std::vector<char> bytes) {
+elf_64_parser::elf_64_parser(std::vector<std::uint8_t> bytes) {
 
 	std::cout<<"64"<<std::endl;
 	

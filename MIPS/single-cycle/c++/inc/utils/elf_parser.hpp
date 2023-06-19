@@ -238,12 +238,12 @@ typedef struct sectionHeader64_t {
 
 typedef struct section32_t : sectionHeader32_t {
 	std::string name;
-	std::vector<char> bytes;
+	std::vector<std::uint8_t> bytes;
 } section32_t;
 
 typedef struct section64_t : sectionHeader64_t {
 	std::string name;
-	std::vector<char> bytes;
+	std::vector<std::uint8_t> bytes;
 } section64_t;
 
 class elf_parser {
@@ -251,7 +251,7 @@ class elf_parser {
 	// Factory
 	public:
 		static elf_parser read_file(std::string file);
-		unsigned int join_bytes(std::vector<char>::iterator ptr, int numOfBytes, bool bigEndian);
+		unsigned int join_bytes(std::vector<std::uint8_t>::iterator ptr, int numOfBytes, bool bigEndian);
 };
 
 
@@ -263,8 +263,8 @@ class elf_32_parser : public elf_parser {
                 std::vector<section32_t> sectionHeaderTable;
 
 	public:
-		elf_32_parser(std::vector<char> bytes);
-		std::vector<char> read_section(std::string name);
+		elf_32_parser(std::vector<std::uint8_t> bytes);
+		std::vector<std::uint8_t> read_section(std::string name);
 };
 
 
@@ -276,7 +276,7 @@ class elf_64_parser : public elf_parser {
                 std::vector<sectionHeader64_t> sectionHeaderTable;
 
 	public:
-		elf_64_parser(std::vector<char> bytes);
+		elf_64_parser(std::vector<std::uint8_t> bytes);
 };
 
 
