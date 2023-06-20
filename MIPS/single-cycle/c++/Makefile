@@ -22,6 +22,8 @@ $(EDIR)/$(OUT): $(OBJ)
 
 .PHONY: clean
 clean:
-	rm $(EDIR)/$(OUT)	
+	rm $(EDIR)/$(OUT)
 
+clean_obj:
+	rm $(OBJ)
 

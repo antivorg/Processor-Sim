@@ -2,7 +2,13 @@
 
 namespace elf {
 
-elf_parser elf_parser::read_file(std::string file) {
+bool compare_sections_32(const section32_t& a, const section32_t& b) {
+
+        return a.sh_offset < b.sh_offset ? true : (a.sh_offset == b.sh_offset ? a.sh_size < b.sh_size : false);
+}
+
+
+elf_parser* elf_parser::read_file(std::string file) {
 
 	try {
 		std::vector<std::uint8_t> bytes;
@@ -22,10 +28,10 @@ elf_parser elf_parser::read_file(std::string file) {
 
 		if (bytes[EI_CLASS_offset] == 1) {
                 	// 32-bit format
-                	return elf_32_parser(bytes);
+                	return new elf_32_parser(bytes);
         	} else if (bytes[EI_CLASS_offset] == 2) {
                 	// 64-bit format
-                	return elf_64_parser(bytes);
+                	return new elf_64_parser(bytes);
         	} else {
 			throw 2;
 		}
@@ -43,7 +49,7 @@ elf_parser elf_parser::read_file(std::string file) {
 				std::cout << "Exception: Unexpected value in ELF header" << std::endl;
 				break;
 		}
-	return elf_error();
+	//return new elf_error();
 	}
 }
 
@@ -65,7 +71,7 @@ unsigned int elf_parser::join_bytes(std::vector<std::uint8_t>::iterator ptr, int
 elf_32_parser::elf_32_parser(std::vector<std::uint8_t> bytes) {
 
 	std::cout<<"32"<<std::endl;
-	
+
 	// parse file header
 	elfHeader.e_ident.EI_OSABI = bytes[EI_OSABI_offset];
         elfHeader.e_ident.EI_ABIVERSION = bytes[EI_ABIVERSION_offset];
@@ -112,7 +118,7 @@ elf_32_parser::elf_32_parser(std::vector<std::uint8_t> bytes) {
 
 	// parser string table
 	sectionHeader32_t stringTableHeader = sectionHeaderTable[elfHeader.e_shstrndx];
-	for (section32_t section : sectionHeaderTable) {
+	for (section32_t &section : sectionHeaderTable) {
 		if (section.sh_type == 0x00) {
 			continue;
 		}
@@ -122,7 +128,7 @@ elf_32_parser::elf_32_parser(std::vector<std::uint8_t> bytes) {
 			sectionName += bytes[offset];
 			offset++;
 		}
-		section.name == sectionName;
+		section.name = sectionName;
 	}
 }
 
@@ -137,6 +143,28 @@ std::vector<std::uint8_t> elf_32_parser::read_section(std::string name) {
 	}
 
 	return section.bytes;
+}
+
+
+void elf_32_parser::print_sections(void) {
+
+	std::cout << std::left << std::setfill(' ') << std::setw(18) << "Name";
+	std::cout << std::left << std::setw(15) << "Type";
+	std::cout << std::left << std::setw(9) << "Addr";
+	std::cout << std::left << std::setw(7) << "Off";
+	std::cout << std::left << std::setw(7) << "Size";
+	std::cout << std::endl;
+	std::vector<section32_t> sections = sectionHeaderTable;
+	std::sort(sections.begin(), sections.end(), compare_sections_32);
+	for (section32_t section : sections) {
+		std::cout << std::left << std::setfill(' ') << std::setw(18) << section.name;
+		std::cout << std::left << std::setw(15) << sectionType[section.sh_type];
+		std::cout << std::right << std::setfill('0') << std::setw(8) << std::hex << section.sh_addr;
+		std::cout << ' ' << std::right << std::setw(6) << std::hex << section.sh_offset;
+		std::cout << ' ' << std::right << std::setw(6) << std::hex << section.sh_size;
+		//std::cout << ' ' << std::right << std::setw(2) << std::hex << section.e_shstrndx;
+		std::cout << std::endl;
+	}
 }
 
 

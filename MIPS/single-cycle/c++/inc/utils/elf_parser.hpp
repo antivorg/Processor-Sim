@@ -9,6 +9,9 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <algorithm>
+#include <map>
+#include <bitset>
 
 
 namespace elf {
@@ -246,12 +249,41 @@ typedef struct section64_t : sectionHeader64_t {
 	std::vector<std::uint8_t> bytes;
 } section64_t;
 
+
+bool compare_section_32(const section32_t& a, const section32_t& b);
+
+
 class elf_parser {
 
 	// Factory
 	public:
-		static elf_parser read_file(std::string file);
+		static elf_parser* read_file(std::string file);
+		virtual std::vector<std::uint8_t> read_section(std::string name) = 0;
+		virtual void print_sections(void) = 0;
+
+	protected:
 		unsigned int join_bytes(std::vector<std::uint8_t>::iterator ptr, int numOfBytes, bool bigEndian);
+		std::map<std::uint8_t, std::string> sectionType {
+			{0x00,	"NULL"},
+			{0x01,	"PROGBITS"},
+			{0x02,	"SYMTAB"},
+			{0x03,	"STRTAB"},
+			{0x04,	"RELA"},
+			{0x05,	"HASH"},
+			{0x06,	"DYNAMIC"},
+			{0x07,	"NOTE"},
+			{0x08,	"NOBITS"},
+			{0x09,	"REL"},
+			{0x0A,	"SHLIB"},
+			{0x0B,	"DYNSYM"},
+			{0x0E,	"INIT_ARRAY"},
+			{0x0F,	"FINI_ARRAY"},
+			{0x10,	"PREINIT_ARRAY"},
+			{0x11,	"GROUP"},
+			{0x12,	"SYMTAB_SHNDX"},
+			{0x13,	"NUM"},
+			{0x60000000, "LOOS"}
+		};
 };
 
 
@@ -262,9 +294,11 @@ class elf_32_parser : public elf_parser {
 		std::vector<programHeader32_t> programHeaders;
                 std::vector<section32_t> sectionHeaderTable;
 
+
 	public:
 		elf_32_parser(std::vector<std::uint8_t> bytes);
 		std::vector<std::uint8_t> read_section(std::string name);
+		void print_sections(void);
 };
 
 
@@ -277,6 +311,8 @@ class elf_64_parser : public elf_parser {
 
 	public:
 		elf_64_parser(std::vector<std::uint8_t> bytes);
+		std::vector<std::uint8_t> read_section(std::string name) {return std::vector<std::uint8_t>();}
+		void print_sections(void) {int i=0;}
 };
 
 
